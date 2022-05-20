@@ -2,14 +2,12 @@ module Converting
   using ..Sources
 
   function convert(source::ConlluSource)
-    sentences = open(f -> read(f, String), source.filename) |> (text -> split(text, r"# sent_id.+\n"))
+    parsed_sentences = []
 
-    sentences = map(sentences) do sentence
-      words = split(sentence, "\n") |> 
-          (words -> filter(word -> (length(word) > 1) && 
-          !(occursin(r"(text = )|(\d+-\d+)", word)), words)) .|> 
-          (word -> split(word, r"\t")) |>
-          (words -> map(word -> [word[1], word[2], word[7], word[8]], words))
+    parse_sentence = (sentence_lines) -> begin
+      words = filter(word -> (length(word) > 1) && !(occursin(r"^(# |(\d+\-\d+)|(\d+\.\d+))", word)), sentence_lines) .|> 
+        (word -> split(word, r"\t")) |>
+        (words -> map(word -> [word[1], word[2], word[7], word[8]], words))
 
       words = map(words) do word
         dependent_word_number = word[1]
@@ -29,11 +27,26 @@ module Converting
         return join([dependency, head_word_label, dependent_word_label], " ")
       end
 
-      return join(words, "\n")
+      push!(parsed_sentences, join(words, "\n"))
     end
-    deleteat!(sentences, 1)
 
-    join(sentences, "\nSENTENCE_END\n")
+    open(source.filename) do file
+      sentence_lines = []
+    
+      while !eof(file)
+        line = readline(file)
+    
+        if !occursin(r"^\s*$", line)
+          push!(sentence_lines, line)
+        else
+          @info sentence_lines
+          parse_sentence(sentence_lines)
+          sentence_lines = []
+        end
+      end
+    end
+
+    join(parsed_sentences, "\nSENTENCE_END\n")
   end
 
   function convert(source::SpacySource)
@@ -84,5 +97,21 @@ module Converting
     end
     deleteat!(new_lines, length(new_lines))
     join(new_lines, "\n")
+  end
+
+  function extract_sentences_from_conllu(filename)
+    sentence_lines = []
+
+    open(filename) do file
+      while !eof(file)
+        line = readline(file)
+    
+        if occursin(r"# text = ", line)
+          push!(sentence_lines, replace(line, r"# text = " => ""))
+        end
+      end
+    end
+
+    join(sentence_lines, "\n")
   end
 end
