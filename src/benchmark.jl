@@ -61,10 +61,10 @@ module Benchmark
 
   function sentence_id(sentence)
     split(sentence, "\n") |> 
-    (words -> map(word -> split(word)[3], words)) |>
-    join |>
-    MD5.md5 |>
-    join
+      (words -> map(word -> split(word)[3], words)) |>
+      join |>
+      MD5.md5 |>
+      join
   end
 
   function time_measure_stanza()

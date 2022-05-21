@@ -39,7 +39,6 @@ module Converting
         if !occursin(r"^\s*$", line)
           push!(sentence_lines, line)
         else
-          @info sentence_lines
           parse_sentence(sentence_lines)
           sentence_lines = []
         end
@@ -80,19 +79,15 @@ module Converting
   end
 
   function convert(source::CoreNLPSource)
-    lines = readlines(source.filename) .|> 
-      (sentence -> (replace(sentence, r"[()]" => " ") |>
-      (sentence -> replace(sentence, r"," => ""))))
+    lines = readlines(source.filename) |> lines -> map(line -> match(r"^(.*)\((.*), (.*)\)", line), lines)
     
     new_lines = []
 
     foreach(lines) do line
-      words = split(line)
-
-      if length(words) != 3
+      if line === nothing
         push!(new_lines, "SENTENCE_END")
       else
-        push!(new_lines, join(words, " "))
+        push!(new_lines, join(line, " "))
       end
     end
     deleteat!(new_lines, length(new_lines))
