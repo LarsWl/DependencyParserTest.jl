@@ -78,6 +78,36 @@ module Converting
     return sentences
   end
 
+  function convert(source::StanzaSource)
+    sentences = open(f -> read(f, String), source.filename) |> (text -> split(text, r"SENTENCE END")) .|> strip
+    deleteat!(sentences, length(sentences))
+    
+    sentences = map(sentences) do sentence
+      map(enumerate(split(sentence, "\n"))) do (index, word)
+        word = split(word)
+        dependent_word = replace(word[1], r"TOKEN:" => "") |> strip
+        dependency = replace(word[2], r"DEP:" => "") |> strip |> lowercase
+        head_word = replace(word[3], r"HEAD:" => "") |> strip
+  
+        dependent_word = replace(dependent_word, r"-\d+" => "-$(index)")
+  
+  
+        head_word_index = findfirst(word -> 
+        ((replace(split(word)[1], r"TOKEN:" => "") 
+            |> strip) == head_word), split(sentence, "\n"))
+        if startswith(head_word, "ROOT")
+          head_word_index = 0
+        end
+  
+        head_word = replace(head_word, r"-\d+" => "-$(head_word_index)")
+  
+        return join([dependency, head_word, dependent_word], " ")
+      end |> (sentence -> join(sentence, "\n"))
+    end |> (sentences -> join(sentences, "\nSENTENCE_END\n"))
+  
+    return sentences
+  end
+
   function convert(source::CoreNLPSource)
     lines = readlines(source.filename) |> lines -> map(line -> match(r"^(.*)\((.*), (.*)\)", line), lines)
     

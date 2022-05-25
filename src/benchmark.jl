@@ -1,6 +1,7 @@
 module Benchmark
   using MD5
   using BenchmarkTools
+  using PyCall
   using ..Sources
   using ..Converting
   
@@ -42,8 +43,8 @@ module Benchmark
     uas = correct_vertices / total_labels
     las = correct_labels / total_labels
 
-    println("UAS - $(uas)")
-    println("LAS - $(las)")
+    @info "UAS - $(uas)"
+    @info "LAS - $(las)"
 
     [uas, las]
   end
@@ -60,6 +61,8 @@ module Benchmark
   end
 
   function sentence_id(sentence)
+    @info sentence
+
     split(sentence, "\n") |> 
       (words -> map(word -> split(word)[3], words)) |>
       join |>
@@ -74,7 +77,11 @@ module Benchmark
   end
 
   function stanza_call()
-      run(`python3 ../stanza_parser/run_depparse_test.py`)
+      run(`python3 /mnt/f/ed_soft/parser_materials/parsers_results/stanza_scrypt.py`)
+  end
+
+  function spacy_call()
+    run(`python3 /mnt/f/ed_soft/parser_materials/parsers_results/.py`)
   end
 
   function time_measure_spacy(input_file, model_path)

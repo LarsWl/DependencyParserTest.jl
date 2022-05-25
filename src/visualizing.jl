@@ -1,8 +1,8 @@
 module Visualizing
-  using Graphs
-  using Cairo
-  using Compose
-  using GraphPlot
+  # using Graphs
+  # using NetworkLayout
+  # using GLMakie
+  # using GraphMakie
 
   using ..Sources
   using ..DependencyTree
@@ -32,24 +32,21 @@ module Visualizing
 
     for (index, line) in enumerate(lines)
       dependency_label, head_token, = split(line)
+      head_index = findfirst(token -> head_token == token, nodelabel)
 
       push!(edgelabel, dependency_label)
-      add_edge!(g, findfirst(token -> head_token == token, nodelabel), index + 1)
+      add_edge!(g, head_index , index + 1)
     end
+    
 
-    layout=(args...)->spring_layout(args...; C=9)
-
-    plot = gplot(
-      g, 
-      nodelabel=nodelabel, 
-      edgelabel=edgelabel, 
-      nodelabeldist=1.7, 
-      linetype="curve",
-      layout=layout,
-      arrowlengthfrac=0.05,
-      arrowangleoffset= π/18
+    GraphMakie.graphplot(
+      g,
+      nlabels=nodelabel,
+      nlabels_distance = 15,
+      elabels = edgelabel,
+      layout=NetworkLayout.Buchheim(),
+      elabels_rotation=0,
+      elabels_distance=25
     )
-
-    draw(PDF(filename, 30cm, 30cm), plot)
   end
 end
