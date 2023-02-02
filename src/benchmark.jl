@@ -61,8 +61,6 @@ module Benchmark
   end
 
   function sentence_id(sentence)
-    @info sentence
-
     split(sentence, "\n") |> 
       (words -> map(word -> split(word)[3], words)) |>
       join |>
